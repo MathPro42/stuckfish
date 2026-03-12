@@ -13,11 +13,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-add_library(ChessEngine src/chess/bitboard.cc)
+add_library(ChessEngine src/chess/bitboard.cc src/chess/attack.cc)
 target_include_directories(ChessEngine PUBLIC src/chess)
 
-add_executable(ChessTests tests/test_bitboard.cc)
+add_executable(ChessTests tests/test_bitboard.cc tests/test_attack.cc)
 target_link_libraries(ChessTests PRIVATE ChessEngine GTest::gtest_main)
 
 include(CTest)
 add_test(NAME BitboardTests COMMAND ChessTests)
+add_test(NAME AttackTests COMMAND ChessTests)

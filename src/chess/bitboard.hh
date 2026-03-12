@@ -114,7 +114,7 @@ std::pmr::string bitboard_to_string(Bitboard board);
 // convert the board in a string of 8x8 looking a chess board
 std::pmr::string board_to_string(BoardState board);
 
-// convert 
+// convert fen representation in bitboard
 void load_fen(BoardState& boardstate, std::string_view fen);
 
 #include "bitboard.hxx"

@@ -1,6 +1,5 @@
 #include "bitboard.hh"
 
-#include <format>
 #include <stdexcept>
 
 std::pmr::string bitboard_to_string(Bitboard board)
@@ -40,8 +39,8 @@ void load_fen(BoardState& boardstate, std::string_view fen)
         board = 0ULL;
     }
 
-    int digit = 7; // Rank 8 (index 7)
-    int letter = 0; // File A (index 0)
+    int digit = 7;
+    int letter = 0;
 
     for (char c : fen)
     {
