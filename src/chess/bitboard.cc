@@ -28,32 +28,34 @@ std::pmr::string board_to_string(BoardState board)
     return bitboard_to_string(board.colors[0] | board.colors[1]);
 }
 
+#include <sstream>
+#include <string>
+
 void load_fen(BoardState& boardstate, std::string_view fen)
 {
+    // 1. Zero out the board state completely
     for (Bitboard& board : boardstate.colors)
-    {
         board = 0ULL;
-    }
     for (Bitboard& board : boardstate.pieces)
-    {
         board = 0ULL;
-    }
 
+    // Create the stream INSIDE the function from the string_view
+    std::istringstream iss{ std::string(fen) };
+    std::string token;
+
+    // --- PART 1: PIECE PLACEMENT ---
+    iss >> token; // Grabs the first chunk before the space
     int digit = 7;
     int letter = 0;
 
-    for (char c : fen)
+    for (char c : token)
     {
-        if (c == ' ')
-            break;
-
         if (c == '/')
         {
             digit--;
             letter = 0;
             continue;
         }
-
         if (std::isdigit(c))
         {
             letter += (c - '0');
@@ -88,7 +90,42 @@ void load_fen(BoardState& boardstate, std::string_view fen)
         default:
             throw std::invalid_argument("Invalid FEN character");
         }
-
         letter++;
     }
+
+    // --- PART 2: ACTIVE COLOR ---
+    iss >> token; // Grabs "w" or "b"
+    boardstate.player = (token == "w") ? WHITE : BLACK;
+
+    iss >> token;
+    boardstate.castling_rights = 0;
+    if (token != "-")
+    {
+        for (char c : token)
+        {
+            if (c == 'K')
+                boardstate.castling_rights |= 1;
+            if (c == 'Q')
+                boardstate.castling_rights |= 2;
+            if (c == 'k')    // --- PART 3: CASTLING RIGHTS ---
+
+                boardstate.castling_rights |= 4;
+            if (c == 'q')
+                boardstate.castling_rights |= 8;
+        }
+    }
+
+    iss >> token;
+    if (token != "-")
+    {
+        int letter = token[0] - 'a';
+        int digit = token[1] - '1';
+        boardstate.en_passant_target = static_cast<Cases>(digit * 8 + letter);
+    }
+    else
+    {
+        boardstate.en_passant_target = NO;
+    }
+
+    iss >> boardstate.half_move_clock >> boardstate.full_move_number;
 }
