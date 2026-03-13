@@ -13,7 +13,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-add_library(ChessEngine src/chess/bitboard.cc src/chess/attack.cc)
+add_library(ChessEngine src/chess/bitboard.cc src/chess/attack.cc src/chess/magic.cc)
 target_include_directories(ChessEngine PUBLIC src/chess)
 
 add_executable(ChessTests tests/test_bitboard.cc tests/test_attack.cc)

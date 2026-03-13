@@ -1,11 +1,10 @@
 #pragma once
 
 #include "attack.hh"
-#include "bitboard.hh"
 
-constexpr Bitboard mask_knight_attacks(Cases square)
+constexpr Bitboard mask_knight_attacks(Cases cases)
 {
-    Bitboard knight = 1ULL << square;
+    Bitboard knight = 1ULL << cases;
     Bitboard attack = 0ULL;
 
     attack |= (knight << 17) & NOT_A;
@@ -13,7 +12,6 @@ constexpr Bitboard mask_knight_attacks(Cases square)
     attack |= (knight >> 15) & NOT_A;
     attack |= (knight >> 6) & NOT_AB;
 
-    // Moving WEST (Mask out H or GH)
     attack |= (knight << 15) & NOT_H;
     attack |= (knight << 6) & NOT_GH;
     attack |= (knight >> 17) & NOT_H;
@@ -22,9 +20,9 @@ constexpr Bitboard mask_knight_attacks(Cases square)
     return attack;
 }
 
-constexpr Bitboard mask_king_attacks(Cases square)
+constexpr Bitboard mask_king_attacks(Cases cases)
 {
-    Bitboard king = 1ULL << square;
+    Bitboard king = 1ULL << cases;
     Bitboard attack = 0ULL;
 
     attack |= (king << 8);
@@ -41,9 +39,9 @@ constexpr Bitboard mask_king_attacks(Cases square)
     return attack;
 }
 
-constexpr Bitboard mask_pawn_attacks(Color color, Cases square)
+constexpr Bitboard mask_pawn_attacks(Color color, Cases cases)
 {
-    Bitboard pawn = 1ULL << square;
+    Bitboard pawn = 1ULL << cases;
     Bitboard attacks = 0ULL;
 
     if (color == WHITE)
@@ -57,4 +55,39 @@ constexpr Bitboard mask_pawn_attacks(Color color, Cases square)
         attacks |= (pawn & NOT_A) >> 9;
     }
     return attacks;
+}
+constexpr Bitboard mask_rook_pre_attacks(Cases cases)
+{
+    Bitboard attack = 0ULL;
+    int digit = cases / 8;
+    int letter = cases % 8;
+
+    for (int i = digit + 1; i <= 6; i++)
+        set_bit(attack, static_cast<Cases>(i * 8 + letter));
+    for (int i = digit - 1; i >= 1; i--)
+        set_bit(attack, static_cast<Cases>(i * 8 + letter));
+    for (int j = letter + 1; j <= 6; j++)
+        set_bit(attack, static_cast<Cases>(digit * 8 + j));
+    for (int j = letter - 1; j >= 1; j--)
+        set_bit(attack, static_cast<Cases>(digit * 8 + j));
+
+    return attack;
+}
+
+constexpr Bitboard mask_bishop_pre_attacks(Cases cases)
+{
+    Bitboard attack = 0ULL;
+    int digit = cases / 8;
+    int letter = cases % 8;
+
+    for (int i = digit + 1, j = letter + 1; i <= 6 && j <= 6; i++, j++)
+        set_bit(attack, static_cast<Cases>(i * 8 + j));
+    for (int i = digit + 1, j = letter - 1; i <= 6 && j >= 1; i++, j--)
+        set_bit(attack, static_cast<Cases>(i * 8 + j));
+    for (int i = digit - 1, j = letter + 1; i >= 1 && j <= 6; i--, j++)
+        set_bit(attack, static_cast<Cases>(i * 8 + j));
+    for (int i = digit - 1, j = letter - 1; i >= 1 && j >= 1; i--, j--)
+        set_bit(attack, static_cast<Cases>(i * 8 + j));
+
+    return attack;
 }

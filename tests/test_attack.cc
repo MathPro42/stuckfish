@@ -127,3 +127,41 @@ TEST(AttackTests, BlackPawnH5)
         << bitboard_to_string(expected) << "\nActual:\n"
         << bitboard_to_string(pawn_attacks[BLACK][H5]);
 }
+
+TEST(AttackTests, RookMagicD4WithBlockers)
+{
+    init_sliders();
+
+    Cases cases = D4;
+
+    Bitboard blockers = 0ULL;
+    set_bit(blockers, D7);
+    set_bit(blockers, B4);
+
+    Bitboard masked_blockers = blockers & mask_rook_pre_attacks(cases);
+
+    int magic_index = (masked_blockers * rook_magic_numbers[cases])
+        >> (64 - rook_bits[cases]);
+
+    Bitboard actual_attacks = rook_attacks[cases][magic_index];
+
+    Bitboard expected_attacks = 0ULL;
+
+    set_bit(expected_attacks, D5);
+    set_bit(expected_attacks, D6);
+    set_bit(expected_attacks, D7);
+    set_bit(expected_attacks, D3);
+    set_bit(expected_attacks, D2);
+    set_bit(expected_attacks, D1);
+    set_bit(expected_attacks, E4);
+    set_bit(expected_attacks, F4);
+    set_bit(expected_attacks, G4);
+    set_bit(expected_attacks, H4);
+    set_bit(expected_attacks, C4);
+    set_bit(expected_attacks, B4);
+
+    EXPECT_EQ(actual_attacks, expected_attacks)
+        << "Magic Rook on D4 failed to respect blockers.\nExpected:\n"
+        << bitboard_to_string(expected_attacks) << "\nActual:\n"
+        << bitboard_to_string(actual_attacks);
+}
