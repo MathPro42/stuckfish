@@ -13,12 +13,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-add_library(ChessEngine src/chess/bitboard.cc src/chess/attack.cc src/chess/magic.cc)
+add_library(ChessEngine src/chess/bitboard.cc src/chess/attack.cc src/chess/magic.cc src/chess/move.cc)
 target_include_directories(ChessEngine PUBLIC src/chess)
 
-add_executable(ChessTests tests/test_bitboard.cc tests/test_attack.cc)
+add_executable(ChessTests tests/test_bitboard.cc tests/test_attack.cc tests/test_move.cc)
 target_link_libraries(ChessTests PRIVATE ChessEngine GTest::gtest_main)
 
 include(CTest)
 add_test(NAME BitboardTests COMMAND ChessTests)
 add_test(NAME AttackTests COMMAND ChessTests)
+add_test(NAME MoveGenerationTests COMMAND ChessTests)

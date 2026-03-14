@@ -107,7 +107,7 @@ void load_fen(BoardState& boardstate, std::string_view fen)
                 boardstate.castling_rights |= 1;
             if (c == 'Q')
                 boardstate.castling_rights |= 2;
-            if (c == 'k')    // --- PART 3: CASTLING RIGHTS ---
+            if (c == 'k') // --- PART 3: CASTLING RIGHTS ---
 
                 boardstate.castling_rights |= 4;
             if (c == 'q')
@@ -124,7 +124,7 @@ void load_fen(BoardState& boardstate, std::string_view fen)
     }
     else
     {
-        boardstate.en_passant_target = NO;
+        boardstate.en_passant_target = NO_CASES;
     }
 
     iss >> boardstate.half_move_clock >> boardstate.full_move_number;

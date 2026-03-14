@@ -187,7 +187,7 @@ Bitboard generate_attacks(const BoardState& state, Color attacking_color)
     while (king)
     {
         int cases = std::countr_zero(king);
-        king |= king_attacks[cases];
+        attacks |= king_attacks[cases];
         king &= king - 1;
     }
 

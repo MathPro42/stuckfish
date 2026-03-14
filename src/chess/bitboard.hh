@@ -87,7 +87,7 @@ enum Cases
     F8 = 61,
     G8 = 62,
     H8 = 63,
-    NO = 64,
+    NO_CASES = 64,
 };
 
 struct BoardState
@@ -101,7 +101,7 @@ struct BoardState
     // Bit 2: Black Kingside (k)
     // Bit 3: Black Queenside (q)
     uint8_t castling_rights = 0;
-    Cases en_passant_target = NO;
+    Cases en_passant_target = NO_CASES;
     int half_move_clock = 0;
     int full_move_number = 1;
 };
