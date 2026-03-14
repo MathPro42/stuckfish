@@ -165,3 +165,27 @@ TEST(AttackTests, RookMagicD4WithBlockers)
         << bitboard_to_string(expected_attacks) << "\nActual:\n"
         << bitboard_to_string(actual_attacks);
 }
+
+TEST(AttackTests, GenerateAttackMap)
+{
+    init_leapers();
+    init_sliders();
+
+    BoardState state;
+    // FEN: White Rook on A1, White Pawn on B2. Black King on C3.
+    load_fen(state, "8/8/8/8/8/2k5/1P6/R7 b - - 0 1");
+
+    Bitboard white_attacks = generate_attacks(state, WHITE);
+
+    EXPECT_TRUE(check_bit(white_attacks, Cases::A3))
+        << "Pawn attack on A3 missing";
+    EXPECT_TRUE(check_bit(white_attacks, Cases::C3))
+        << "Pawn attack on C3 missing";
+
+    EXPECT_TRUE(check_bit(white_attacks, Cases::A5))
+        << "Rook attack on A5 missing";
+    EXPECT_TRUE(check_bit(white_attacks, Cases::H1))
+        << "Rook attack on H1 missing";
+    EXPECT_FALSE(check_bit(white_attacks, Cases::B2))
+        << "Rook should not attack B2";
+}

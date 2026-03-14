@@ -36,6 +36,44 @@ void init_leapers()
     }
 }
 
+void init_sliders()
+{
+    for (int square = 0; square < 64; square++)
+    {
+        Cases cases = static_cast<Cases>(square);
+
+        bishop_magic_numbers[square] =
+            find_magic_number(cases, bishop_bits[square], true);
+
+        Bitboard b_mask = mask_bishop_pre_attacks(cases);
+        int b_indices = 1 << bishop_bits[square];
+
+        for (int i = 0; i < b_indices; i++)
+        {
+            Bitboard occupancy = set_occupancy(i, bishop_bits[square], b_mask);
+            int magic_index = (occupancy * bishop_magic_numbers[square])
+                >> (64 - bishop_bits[square]);
+            bishop_attacks[square][magic_index] =
+                bishop_attacks_on_the_fly(cases, occupancy);
+        }
+
+        rook_magic_numbers[square] =
+            find_magic_number(cases, rook_bits[square], false);
+
+        Bitboard r_mask = mask_rook_pre_attacks(cases);
+        int r_indices = 1 << rook_bits[square];
+
+        for (int i = 0; i < r_indices; i++)
+        {
+            Bitboard occupancy = set_occupancy(i, rook_bits[square], r_mask);
+            int magic_index = (occupancy * rook_magic_numbers[square])
+                >> (64 - rook_bits[square]);
+            rook_attacks[square][magic_index] =
+                rook_attacks_on_the_fly(cases, occupancy);
+        }
+    }
+}
+
 Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask)
 {
     Bitboard occupancy = 0ULL;
@@ -123,40 +161,67 @@ Bitboard bishop_attacks_on_the_fly(Cases cases, Bitboard block)
     return attack;
 }
 
-void init_sliders()
+Bitboard generate_attacks(const BoardState& state, Color attacking_color)
 {
-    for (int square = 0; square < 64; square++)
+    Bitboard attacks = 0ULL;
+
+    Bitboard blockers = state.colors[WHITE] | state.colors[BLACK];
+
+    Bitboard pawns = state.pieces[PAWN] & state.colors[attacking_color];
+    while (pawns)
     {
-        Cases cases = static_cast<Cases>(square);
-
-        bishop_magic_numbers[square] =
-            find_magic_number(cases, bishop_bits[square], true);
-
-        Bitboard b_mask = mask_bishop_pre_attacks(cases);
-        int b_indices = 1 << bishop_bits[square];
-
-        for (int i = 0; i < b_indices; i++)
-        {
-            Bitboard occupancy = set_occupancy(i, bishop_bits[square], b_mask);
-            int magic_index = (occupancy * bishop_magic_numbers[square])
-                >> (64 - bishop_bits[square]);
-            bishop_attacks[square][magic_index] =
-                bishop_attacks_on_the_fly(cases, occupancy);
-        }
-
-        rook_magic_numbers[square] =
-            find_magic_number(cases, rook_bits[square], false);
-
-        Bitboard r_mask = mask_rook_pre_attacks(cases);
-        int r_indices = 1 << rook_bits[square];
-
-        for (int i = 0; i < r_indices; i++)
-        {
-            Bitboard occupancy = set_occupancy(i, rook_bits[square], r_mask);
-            int magic_index = (occupancy * rook_magic_numbers[square])
-                >> (64 - rook_bits[square]);
-            rook_attacks[square][magic_index] =
-                rook_attacks_on_the_fly(cases, occupancy);
-        }
+        int cases = std::countr_zero(pawns);
+        attacks |= pawn_attacks[attacking_color][cases];
+        pawns &= pawns - 1;
     }
+
+    Bitboard knights = state.pieces[KNIGHT] & state.colors[attacking_color];
+    while (knights)
+    {
+        int cases = std::countr_zero(knights);
+        attacks |= knight_attacks[cases];
+        knights &= knights - 1;
+    }
+
+    Bitboard king = state.pieces[KING] & state.colors[attacking_color];
+    while (king)
+    {
+        int cases = std::countr_zero(king);
+        king |= king_attacks[cases];
+        king &= king - 1;
+    }
+
+    Bitboard diagonals = (state.pieces[BISHOP] | state.pieces[QUEEN])
+        & state.colors[attacking_color];
+    while (diagonals)
+    {
+        int cases = std::countr_zero(diagonals);
+
+        Bitboard mask = mask_bishop_pre_attacks(static_cast<Cases>(cases));
+        Bitboard occupancy = blockers & mask;
+        int magic_index = static_cast<int>(
+            (static_cast<uint64_t>(occupancy)
+             * static_cast<uint64_t>(bishop_magic_numbers[cases]))
+            >> (64 - bishop_bits[cases]));
+        attacks |= bishop_attacks[cases][magic_index];
+
+        diagonals &= diagonals - 1;
+    }
+    Bitboard orthogonal = (state.pieces[ROOK] | state.pieces[QUEEN])
+        & state.colors[attacking_color];
+    while (orthogonal)
+    {
+        int cases = std::countr_zero(orthogonal);
+
+        Bitboard mask = mask_rook_pre_attacks(static_cast<Cases>(cases));
+        Bitboard occupancy = blockers & mask;
+        int magic_index = static_cast<int>(
+            (static_cast<uint64_t>(occupancy)
+             * static_cast<uint64_t>(rook_magic_numbers[cases]))
+            >> (64 - rook_bits[cases]));
+        attacks |= rook_attacks[cases][magic_index];
+
+        orthogonal &= orthogonal - 1;
+    }
+    return attacks;
 }

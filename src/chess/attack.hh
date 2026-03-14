@@ -33,4 +33,6 @@ Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask);
 Bitboard rook_attacks_on_the_fly(Cases cases, Bitboard block);
 Bitboard bishop_attacks_on_the_fly(Cases cases, Bitboard block);
 
+Bitboard generate_attacks(const BoardState& state, Color attacking_color);
+
 #include "attack.hxx"
