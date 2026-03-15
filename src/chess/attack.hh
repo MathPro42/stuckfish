@@ -14,6 +14,9 @@ extern Bitboard bishop_attacks[64][512];
 extern const int rook_bits[64];
 extern const int bishop_bits[64];
 
+extern Bitboard rook_masks[64];
+extern Bitboard bishop_masks[64];
+
 constexpr Bitboard NOT_A = 0xfefefefefefefefeULL;
 constexpr Bitboard NOT_H = 0x7f7f7f7f7f7f7f7fULL;
 constexpr Bitboard NOT_AB = 0xfcfcfcfcfcfcfcfcULL;
@@ -34,5 +37,7 @@ Bitboard rook_attacks_on_the_fly(Cases cases, Bitboard block);
 Bitboard bishop_attacks_on_the_fly(Cases cases, Bitboard block);
 
 Bitboard generate_attacks(const BoardState& state, Color attacking_color);
+bool is_cases_attacked(const BoardState& state, Cases cases,
+                       Color attacking_color);
 
 #include "attack.hxx"

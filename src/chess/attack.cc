@@ -12,6 +12,9 @@ Bitboard bishop_magic_numbers[64];
 Bitboard rook_attacks[64][4096];
 Bitboard bishop_attacks[64][512];
 
+Bitboard rook_masks[64];
+Bitboard bishop_masks[64];
+
 const int rook_bits[64] = { 12, 11, 11, 11, 11, 11, 11, 12, 11, 10, 10, 10, 10,
                             10, 10, 11, 11, 10, 10, 10, 10, 10, 10, 11, 11, 10,
                             10, 10, 10, 10, 10, 11, 11, 10, 10, 10, 10, 10, 10,
@@ -28,7 +31,6 @@ void init_leapers()
     for (int i = 0; i < 64; i++)
     {
         Cases cases = static_cast<Cases>(i);
-
         knight_attacks[i] = mask_knight_attacks(cases);
         king_attacks[i] = mask_king_attacks(cases);
         pawn_attacks[BLACK][i] = mask_pawn_attacks(BLACK, cases);
@@ -41,16 +43,15 @@ void init_sliders()
     for (int square = 0; square < 64; square++)
     {
         Cases cases = static_cast<Cases>(square);
-
         bishop_magic_numbers[square] =
             find_magic_number(cases, bishop_bits[square], true);
+        bishop_masks[square] = mask_bishop_pre_attacks(cases);
 
-        Bitboard b_mask = mask_bishop_pre_attacks(cases);
         int b_indices = 1 << bishop_bits[square];
-
         for (int i = 0; i < b_indices; i++)
         {
-            Bitboard occupancy = set_occupancy(i, bishop_bits[square], b_mask);
+            Bitboard occupancy =
+                set_occupancy(i, bishop_bits[square], bishop_masks[square]);
             int magic_index = (occupancy * bishop_magic_numbers[square])
                 >> (64 - bishop_bits[square]);
             bishop_attacks[square][magic_index] =
@@ -59,13 +60,13 @@ void init_sliders()
 
         rook_magic_numbers[square] =
             find_magic_number(cases, rook_bits[square], false);
+        rook_masks[square] = mask_rook_pre_attacks(cases);
 
-        Bitboard r_mask = mask_rook_pre_attacks(cases);
         int r_indices = 1 << rook_bits[square];
-
         for (int i = 0; i < r_indices; i++)
         {
-            Bitboard occupancy = set_occupancy(i, rook_bits[square], r_mask);
+            Bitboard occupancy =
+                set_occupancy(i, rook_bits[square], rook_masks[square]);
             int magic_index = (occupancy * rook_magic_numbers[square])
                 >> (64 - rook_bits[square]);
             rook_attacks[square][magic_index] =
@@ -164,64 +165,87 @@ Bitboard bishop_attacks_on_the_fly(Cases cases, Bitboard block)
 Bitboard generate_attacks(const BoardState& state, Color attacking_color)
 {
     Bitboard attacks = 0ULL;
-
     Bitboard blockers = state.colors[WHITE] | state.colors[BLACK];
 
     Bitboard pawns = state.pieces[PAWN] & state.colors[attacking_color];
-    while (pawns)
+    for (Cases cases : Bitloop(pawns))
     {
-        int cases = std::countr_zero(pawns);
         attacks |= pawn_attacks[attacking_color][cases];
-        pawns &= pawns - 1;
     }
 
     Bitboard knights = state.pieces[KNIGHT] & state.colors[attacking_color];
-    while (knights)
+    for (Cases cases : Bitloop(knights))
     {
-        int cases = std::countr_zero(knights);
         attacks |= knight_attacks[cases];
-        knights &= knights - 1;
     }
 
     Bitboard king = state.pieces[KING] & state.colors[attacking_color];
-    while (king)
+    for (Cases cases : Bitloop(king))
     {
-        int cases = std::countr_zero(king);
         attacks |= king_attacks[cases];
-        king &= king - 1;
     }
 
     Bitboard diagonals = (state.pieces[BISHOP] | state.pieces[QUEEN])
         & state.colors[attacking_color];
-    while (diagonals)
+    for (Cases cases : Bitloop(diagonals))
     {
-        int cases = std::countr_zero(diagonals);
-
-        Bitboard mask = mask_bishop_pre_attacks(static_cast<Cases>(cases));
+        Bitboard mask = mask_bishop_pre_attacks(cases);
         Bitboard occupancy = blockers & mask;
         int magic_index = static_cast<int>(
             (static_cast<uint64_t>(occupancy)
              * static_cast<uint64_t>(bishop_magic_numbers[cases]))
             >> (64 - bishop_bits[cases]));
         attacks |= bishop_attacks[cases][magic_index];
-
-        diagonals &= diagonals - 1;
     }
+
     Bitboard orthogonal = (state.pieces[ROOK] | state.pieces[QUEEN])
         & state.colors[attacking_color];
-    while (orthogonal)
+    for (Cases cases : Bitloop(orthogonal))
     {
-        int cases = std::countr_zero(orthogonal);
-
-        Bitboard mask = mask_rook_pre_attacks(static_cast<Cases>(cases));
+        Bitboard mask = mask_rook_pre_attacks(cases);
         Bitboard occupancy = blockers & mask;
         int magic_index = static_cast<int>(
             (static_cast<uint64_t>(occupancy)
              * static_cast<uint64_t>(rook_magic_numbers[cases]))
             >> (64 - rook_bits[cases]));
         attacks |= rook_attacks[cases][magic_index];
-
-        orthogonal &= orthogonal - 1;
     }
+
     return attacks;
+}
+
+bool is_cases_attacked(const BoardState& state, Cases cases,
+                       Color attacking_color)
+{
+    if (knight_attacks[cases] & state.pieces[KNIGHT]
+        & state.colors[attacking_color])
+        return true;
+    if (king_attacks[cases] & state.pieces[KING]
+        & state.colors[attacking_color])
+        return true;
+
+    Color defending_color = (attacking_color == WHITE) ? BLACK : WHITE;
+    if (pawn_attacks[defending_color][cases] & state.pieces[PAWN]
+        & state.colors[attacking_color])
+        return true;
+
+    Bitboard blockers = state.colors[WHITE] | state.colors[BLACK];
+
+    Bitboard b_occupancy = blockers & bishop_masks[cases];
+    int b_magic = static_cast<int>((b_occupancy * bishop_magic_numbers[cases])
+                                   >> (64 - bishop_bits[cases]));
+    if (bishop_attacks[cases][b_magic]
+        & (state.pieces[BISHOP] | state.pieces[QUEEN])
+        & state.colors[attacking_color])
+        return true;
+
+    Bitboard r_occupancy = blockers & rook_masks[cases];
+    int r_magic = static_cast<int>((r_occupancy * rook_magic_numbers[cases])
+                                   >> (64 - rook_bits[cases]));
+    if (rook_attacks[cases][r_magic]
+        & (state.pieces[ROOK] | state.pieces[QUEEN])
+        & state.colors[attacking_color])
+        return true;
+
+    return false;
 }

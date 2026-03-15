@@ -94,7 +94,6 @@ struct BoardState
 {
     Bitboard pieces[6]; // represent all pieces of each type
     Bitboard colors[2]; // represent all pieces for each player
-
     Color player = WHITE;
     // Bit 0: White Kingside (K)
     // Bit 1: White Queenside (Q)
@@ -104,6 +103,46 @@ struct BoardState
     Cases en_passant_target = NO_CASES;
     int half_move_clock = 0;
     int full_move_number = 1;
+};
+
+struct Bitloop
+{
+    Bitboard bb;
+    explicit Bitloop(Bitboard b)
+        : bb(b)
+    {}
+
+    struct Iterator
+    {
+        Bitboard bb;
+        explicit Iterator(Bitboard b)
+            : bb(b)
+        {}
+
+        bool operator!=(const Iterator& other) const
+        {
+            return bb != other.bb;
+        }
+
+        void operator++()
+        {
+            bb &= bb - 1;
+        }
+
+        Cases operator*() const
+        {
+            return static_cast<Cases>(std::countr_zero(bb));
+        }
+    };
+
+    Iterator begin() const
+    {
+        return Iterator(bb);
+    }
+    Iterator end() const
+    {
+        return Iterator(0ULL);
+    }
 };
 
 // Set the case bit to 1

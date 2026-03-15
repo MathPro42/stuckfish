@@ -25,13 +25,16 @@ enum MoveFlags : uint16_t
 
 struct Move
 {
-    uint16_t data;
+    uint32_t data; // Bits: 0-5: to, 6-11: from, 12-14: piece, 15-17: captured,
+                   // 18-21: flags
     Move()
         : data(0)
     {}
-    Move(uint16_t from, uint16_t to, uint16_t flags)
+
+    Move(int from, int to, int piece, int captured, int flags)
     {
-        data = (flags << 12) | (from << 6) | to;
+        data =
+            (flags << 18) | (captured << 15) | (piece << 12) | (from << 6) | to;
     }
 
     constexpr uint16_t get_to() const
@@ -42,9 +45,17 @@ struct Move
     {
         return (data >> 6) & 0x3F;
     }
+    constexpr uint16_t get_piece() const
+    {
+        return (data >> 12) & 0x07;
+    }
+    constexpr uint16_t get_captured() const
+    {
+        return (data >> 15) & 0x07;
+    }
     constexpr uint16_t get_flags() const
     {
-        return (data >> 12) & 0x0F;
+        return (data >> 18) & 0x0F;
     }
 };
 
@@ -66,5 +77,5 @@ void generate_pawn_moves(const BoardState& state, MoveList& move_list);
 void generate_piece_moves(const BoardState& state, Color color,
                           MoveList& move_list);
 
-bool make_move(BoardState& state, Move move);
-uint64_t perft(BoardState state, int depth);
+[[nodiscard]] bool make_move(BoardState& state, Move move);
+uint64_t perft(BoardState& state, int depth);
